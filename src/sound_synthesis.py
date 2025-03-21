@@ -2,19 +2,38 @@ import numpy as np
 import sounddevice as sd
 
 
+def normalize_amplitude(wave: np.ndarray,
+                        amplitude: float = 0.5) -> np.ndarray:
+    max_amplitude = np.max(np.abs(wave))
+    return amplitude * (wave / max_amplitude)
+
+
+def time_points(modulator_wave: np.ndarray,
+                sample_rate: int = 44100):
+    total_samples = len(modulator_wave)
+    return np.arange(total_samples) / sample_rate
+
+
 def amplitude_modulation(carrier_frequency: float,
                          modulator_wave: np.ndarray,
                          modulation_index: float = 0.5,
                          amplitude: float = 0.5,
                          sample_rate: int = 44100) -> np.ndarray:
-    total_samples = len(modulator_wave)
-    time_points = np.arange(total_samples) / sample_rate
-    carrier_wave = np.sin(2 * np.pi * carrier_frequency * time_points)
+    t_p = time_points(modulator_wave, sample_rate)
+    carrier_wave = np.sin(2 * np.pi * carrier_frequency * t_p)
     am_wave = (1 + modulation_index * modulator_wave) * carrier_wave
-    max_amplitude = np.max(np.abs(am_wave))
-    am_wave = amplitude * (am_wave / max_amplitude)
+    return normalize_amplitude(am_wave, amplitude)
 
-    return am_wave
+
+def frequency_modulation(carrier_frequency: float,
+                         modulator_wave: np.ndarray,
+                         modulation_index: float = 0.5,
+                         amplitude: float = 0.5,
+                         sample_rate: int = 44100) -> np.ndarray:
+    t_p = time_points(modulator_wave, sample_rate)
+    fm_wave = np.sin(2 * np.pi * carrier_frequency * t_p +
+                     modulation_index * modulator_wave)
+    return normalize_amplitude(fm_wave, amplitude)
 
 
 def apply_envelope(sound: np.ndarray,
@@ -40,7 +59,6 @@ def white_noise(duration: float = 1.0,
     n_s = int(duration * sample_rate)
     noise = np.random.uniform(-1, 1, n_s)
     noise *= amplitude
-
     return noise
 
 
@@ -52,7 +70,6 @@ def sine_tone(frequency: int = 440,
     time_points = np.linspace(0, duration, n_s, False)
     sine = np.sin(2 * np.pi * frequency * time_points)
     sine *= amplitude
-
     return sine
 
 
@@ -84,8 +101,9 @@ if __name__ == '__main__':
     my_modulator = sine_tone(frequency=217, duration=3.0)
 
     my_sound = amplitude_modulation(220, my_modulator)
-    my_sound = amplitude_modulation(30, my_sound)
-    my_sound = amplitude_modulation(60, my_sound)
+    my_sound = frequency_modulation(6, my_sound)
+    # my_sound = amplitude_modulation(30, my_sound)
+    # my_sound = amplitude_modulation(60, my_sound)
 
     sd.play(my_sound)
     sd.wait()
