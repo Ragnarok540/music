@@ -2,6 +2,21 @@ import numpy as np
 import sounddevice as sd
 
 
+def amplitude_modulation(carrier_frequency: float,
+                         modulator_wave: np.ndarray,
+                         modulation_index: float = 0.5,
+                         amplitude: float = 0.5,
+                         sample_rate: int = 44100) -> np.ndarray:
+    total_samples = len(modulator_wave)
+    time_points = np.arange(total_samples) / sample_rate
+    carrier_wave = np.sin(2 * np.pi * carrier_frequency * time_points)
+    am_wave = (1 + modulation_index * modulator_wave) * carrier_wave
+    max_amplitude = np.max(np.abs(am_wave))
+    am_wave = amplitude * (am_wave / max_amplitude)
+
+    return am_wave
+
+
 def apply_envelope(sound: np.ndarray,
                    adsr: dict,
                    sample_rate: int = 44100) -> np.ndarray:
@@ -53,18 +68,24 @@ if __name__ == '__main__':
     # sines = [sine_tone(frequency=200 * i + 50, duration=3.0, amplitude=0.7/i) for i in range(1, 31, 2)]
     # my_sound = sum(sines)
 
-    sines = [sine_tone(frequency=200, duration=3.0, amplitude=0.6),
-             sine_tone(frequency=205, duration=3.0, amplitude=0.6)]
-    my_sound = sum(sines)
+    # sines = [sine_tone(frequency=200, duration=3.0, amplitude=0.6),
+    #          sine_tone(frequency=205, duration=3.0, amplitude=0.6)]
+    # my_sound = sum(sines)
 
-    adsr = {
-        'attack': 0.5,
-        'decay': 0.2,
-        'sustain': 0.6,
-        'release': 0.5,
-    }
+    # adsr = {
+    #     'attack': 0.5,
+    #     'decay': 0.2,
+    #     'sustain': 0.6,
+    #     'release': 0.5,
+    # }
 
-    my_sound = apply_envelope(my_sound, adsr)
+    # my_sound = apply_envelope(my_sound, adsr)
+
+    my_modulator = sine_tone(frequency=217, duration=3.0)
+
+    my_sound = amplitude_modulation(220, my_modulator)
+    my_sound = amplitude_modulation(30, my_sound)
+    my_sound = amplitude_modulation(60, my_sound)
 
     sd.play(my_sound)
     sd.wait()
