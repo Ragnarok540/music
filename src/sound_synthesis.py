@@ -2,6 +2,18 @@ import numpy as np
 import sounddevice as sd
 
 
+def highpass(wave: np.ndarray, dt: float, rc: float) -> np.ndarray:
+    result = np.zeros_like(wave)
+    alpha = rc / (rc + dt)
+    print(alpha)
+    result[0] = wave[0]
+
+    for i in range(1, len(wave)):
+        result[i] = alpha * (result[i - 1] + wave[i] - wave[i - 1])
+
+    return result
+
+
 def lowpass(wave: np.ndarray, dt: float, rc: float) -> np.ndarray:
     result = np.zeros_like(wave)
     alpha = dt / (rc + dt)
@@ -117,7 +129,8 @@ if __name__ == '__main__':
     # my_sound = amplitude_modulation(30, my_sound)
     # my_sound = amplitude_modulation(60, my_sound)
 
-    my_sound = lowpass(my_sound, 3, 50)
+    # my_sound = lowpass(my_sound, 3, 50)
+    my_sound = highpass(my_sound, 3, 50)
 
     sd.play(my_sound)
     sd.wait()
