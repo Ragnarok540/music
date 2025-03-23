@@ -2,6 +2,18 @@ import numpy as np
 import sounddevice as sd
 
 
+def lowpass(wave: np.ndarray, dt: float, rc: float) -> np.ndarray:
+    result = np.zeros_like(wave)
+    alpha = dt / (rc + dt)
+    print(alpha)
+    result[0] = alpha * wave[0]
+
+    for i in range(1, len(wave)):
+        result[i] = result[i - 1] + alpha * (wave[i] - result[i - 1])
+
+    return result
+
+
 def normalize_amplitude(wave: np.ndarray,
                         amplitude: float = 0.5) -> np.ndarray:
     max_amplitude = np.max(np.abs(wave))
@@ -74,7 +86,7 @@ def sine_tone(frequency: int = 440,
 
 
 if __name__ == '__main__':
-    # my_sound = white_noise()
+    my_sound = white_noise(duration=3.0)
     # my_sound = sine_tone(duration=3.0)
 
     # sine_1 = sine_tone(frequency=200, amplitude=0.6)
@@ -98,12 +110,14 @@ if __name__ == '__main__':
 
     # my_sound = apply_envelope(my_sound, adsr)
 
-    my_modulator = sine_tone(frequency=217, duration=3.0)
+    # my_modulator = sine_tone(frequency=217, duration=3.0)
 
-    my_sound = amplitude_modulation(220, my_modulator)
-    my_sound = frequency_modulation(6, my_sound)
+    # my_sound = amplitude_modulation(220, my_modulator)
+    # my_sound = frequency_modulation(6, my_sound)
     # my_sound = amplitude_modulation(30, my_sound)
     # my_sound = amplitude_modulation(60, my_sound)
+
+    my_sound = lowpass(my_sound, 3, 50)
 
     sd.play(my_sound)
     sd.wait()
