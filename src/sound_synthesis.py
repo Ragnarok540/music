@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # my_sound = amplitude_modulation(60, my_sound)
 
     # my_sound = lowpass(my_sound, 3, 50)
-    my_sound = highpass(my_sound, 3, 50)
+    my_sound = highpass(my_sound, 1.0/44100, 0.0001)
 
     sd.play(my_sound)
     sd.wait()
