@@ -2,6 +2,10 @@ import numpy as np
 import sounddevice as sd
 
 
+def w(frequency: float) -> float:
+    return 2 * np.pi * frequency
+
+
 def highpass(wave: np.ndarray, dt: float, rc: float) -> np.ndarray:
     result = np.zeros_like(wave)
     alpha = rc / (rc + dt)
@@ -44,7 +48,7 @@ def amplitude_modulation(carrier_frequency: float,
                          amplitude: float = 0.5,
                          sample_rate: int = 44100) -> np.ndarray:
     t_p = time_points(modulator_wave, sample_rate)
-    carrier_wave = np.sin(2 * np.pi * carrier_frequency * t_p)
+    carrier_wave = np.sin(w(carrier_frequency) * t_p)
     am_wave = (1 + modulation_index * modulator_wave) * carrier_wave
     return normalize_amplitude(am_wave, amplitude)
 
@@ -55,7 +59,7 @@ def frequency_modulation(carrier_frequency: float,
                          amplitude: float = 0.5,
                          sample_rate: int = 44100) -> np.ndarray:
     t_p = time_points(modulator_wave, sample_rate)
-    fm_wave = np.sin(2 * np.pi * carrier_frequency * t_p +
+    fm_wave = np.sin(w(carrier_frequency) * t_p +
                      modulation_index * modulator_wave)
     return normalize_amplitude(fm_wave, amplitude)
 
@@ -92,7 +96,7 @@ def sine_tone(frequency: int = 440,
               sample_rate: int = 44100) -> np.ndarray:
     n_s = int(duration * sample_rate)
     time_points = np.linspace(0, duration, n_s, False)
-    sine = np.sin(2 * np.pi * frequency * time_points)
+    sine = np.sin(w(frequency) * time_points)
     sine *= amplitude
     return sine
 
