@@ -30,11 +30,15 @@ def square(x):
     return np.sign(np.sin(x)) * 0.5
 
 
+def triangle(x):
+    return np.arcsin(np.sin(x)) * 0.5
+
+
 if __name__ == '__main__':
     sample_rate = 44100
     f = 220
     t = 3
-    waveform = square
+    waveform = triangle
     wavetable_length = 64
     wavetable = np.zeros((wavetable_length,))
 
@@ -57,6 +61,6 @@ if __name__ == '__main__':
 
     output = fade_in_out(output)
 
-    wav.write('square220HzScaledInterpolatedFaded.wav',
+    wav.write('triangle220HzScaledInterpolatedFaded.wav',
               sample_rate,
               output.astype(np.float32))
