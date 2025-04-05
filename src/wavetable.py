@@ -2,6 +2,18 @@ import numpy as np
 import scipy.io.wavfile as wav
 
 
+def saw(x):
+    return (x + np.pi) / np.pi % 2 - 1
+
+
+def square(x):
+    return np.sign(np.sin(x)) * 0.5
+
+
+def triangle(x):
+    return np.arcsin(np.sin(x)) * 0.5
+
+
 def create_wavetable(waveform: str = 'sine',
                      length: int = 64) -> np.ndarray:
     wavetable = np.zeros((length,))
@@ -10,14 +22,11 @@ def create_wavetable(waveform: str = 'sine',
         case 'sine' | 'sin':
             wave = np.sin
         case 'sawtooth' | 'saw':
-            def wave(x):
-                (x + np.pi) / np.pi % 2 - 1
+            wave = saw
         case 'square':
-            def wave(x):
-                np.sign(np.sin(x)) * 0.5
+            wave = square
         case 'triangle':
-            def wave(x):
-                np.arcsin(np.sin(x)) * 0.5
+            wave = triangle
         case _:
             raise Exception(f'waveform "{waveform}" not implemented')
 
@@ -36,20 +45,44 @@ def scale_signal(signal: np.ndarray,
     return output
 
 
+def interpolate_linearly(wavetable, index):
+    truncated_index = int(np.floor(index))
+    next_index = (truncated_index + 1) % wavetable.shape[0]
+    next_index_weight = index - truncated_index
+    truncated_index_weight = 1 - next_index_weight
+
+    return truncated_index_weight * wavetable[truncated_index] + \
+        next_index_weight * wavetable[next_index]
+
+
 def wavetable_synthesis(wavetable: np.ndarray,
                         sample_rate: int = 44100,
                         frequency: int = 440,
-                        duration: float = 3) -> np.ndarray:
+                        duration: float = 3,
+                        interpolate: bool = False) -> np.ndarray:
     output = np.zeros((duration * sample_rate,))
     index = 0
     increment = frequency * wavetable.shape[0] / sample_rate
 
     for n in range(output.shape[0]):
-        output[n] = wavetable[int(np.floor(index))]
+        if interpolate:
+            output[n] = interpolate_linearly(wavetable, index)
+        else:
+            output[n] = wavetable[int(np.floor(index))]
         index += increment
         index %= wavetable.shape[0]
 
     return output
+
+
+def fade_in_out(signal, fade_length=1000):
+    fade_in = (1 - np.cos(np.linspace(0, np.pi, fade_length))) * 0.5
+    fade_out = np.flip(fade_in)
+
+    signal[:fade_length] = np.multiply(fade_in, signal[:fade_length])
+    signal[-fade_length:] = np.multiply(fade_out, signal[-fade_length:])
+
+    return signal
 
 
 if __name__ == '__main__':
@@ -67,3 +100,33 @@ if __name__ == '__main__':
     wav.write('sine440HzScaled.wav',
               sample_rate,
               scaled_output.astype(np.float32))
+
+    interpolated_output = wavetable_synthesis(wavetable,
+                                              sample_rate,
+                                              interpolate=True)
+
+    interpolated_scaled_output = scale_signal(interpolated_output)
+
+    wav.write('sine440HzScaledInterpolated.wav',
+              sample_rate,
+              interpolated_scaled_output.astype(np.float32))
+
+    faded_interpolated_scaled_output = fade_in_out(interpolated_scaled_output)
+
+    wav.write('sine440HzScaledInterpolatedFaded.wav',
+              sample_rate,
+              faded_interpolated_scaled_output.astype(np.float32))
+
+    for waveform in ['sawtooth', 'square', 'triangle']:
+        wavetable = create_wavetable(waveform,
+                                     wavetable_length)
+        output = wavetable_synthesis(wavetable,
+                                     sample_rate,
+                                     frequency=220,
+                                     interpolate=True)
+        output = scale_signal(output)
+        output = fade_in_out(output)
+
+        wav.write(f'{waveform}220HzScaledInterpolatedFaded.wav',
+                  sample_rate,
+                  output.astype(np.float32))
